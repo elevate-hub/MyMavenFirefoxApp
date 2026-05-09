@@ -1,10 +1,16 @@
 pipeline {
-    agent any  // Use any available agent
+    agent any  
 
     tools {
-        maven 'Maven'  // Ensure this matches the name configured in Jenkins
+        maven 'Maven'
     }
+
+    environment {
+        JAR_FILE = "target/MyMavenFirefoxApp-1.0-SNAPSHOT.jar"
+    }
+
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'master', url: 'https://github.com/elevate-hub/MyMavenFirefoxApp.git'
@@ -13,35 +19,50 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn clean package'  // Run Maven build
+                sh 'mvn clean compile'
             }
         }
 
         stage('Test') {
             steps {
-                sh 'mvn test'  // Run unit tests
+                sh 'mvn test'
             }
         }
 
-        
-        
-       
+        stage('Package') {
+            steps {
+                sh 'mvn package -DskipTests'
+            }
+        }
+
+        stage('Verify JAR') {
+            steps {
+                sh '''
+                echo "Current directory:"
+                pwd
+
+                echo "Files in target folder:"
+                ls -l target/
+                '''
+            }
+        }
+
         stage('Run Application') {
             steps {
-                // Start the JAR application
-                sh 'mvn exec:java -Dexec.mainClass="com.example.App"'
+                sh '''
+                echo "Starting application..."
+                nohup java -jar target/MyMavenFirefoxApp-1.0-SNAPSHOT.jar > app.log 2>&1 &
+                '''
             }
         }
-
-        
     }
 
     post {
         success {
-            echo 'Build and deployment successful!'
+            echo 'Build and deployment successful! 🎉'
         }
         failure {
-            echo 'Build failed!'
+            echo 'Build failed! ❌'
         }
     }
 }
